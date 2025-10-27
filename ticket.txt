@@ -2,6 +2,6 @@
 ORIGIN STATION
 to
 AIRPORT
-Price: 13.50 [Return]
+Price: 7.65 [Single]
 
 ***

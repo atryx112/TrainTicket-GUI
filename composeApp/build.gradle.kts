@@ -19,6 +19,8 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.xerial:sqlite-jdbc:3.45.3.0")
+                implementation(compose.desktop.currentOs)
+                implementation(compose.materialIconsExtended) // ← icons
             }
         }
         val desktopTest by getting

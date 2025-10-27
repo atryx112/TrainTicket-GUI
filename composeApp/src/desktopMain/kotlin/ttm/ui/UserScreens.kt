@@ -26,46 +26,59 @@ fun UserSearchScreen(
     val selectedStation = stations.find { it.id == selectedId }
     val quote = selectedStation?.let { offerRepo.quote(it) }
 
-    Column(Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Train Ticket Machine", style = MaterialTheme.typography.h5)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Destination: ")
-            Spacer(Modifier.width(8.dp))
-            DropdownMenuBox(
-                items = stations.map { it.id to it.name },
-                selected = selectedId,
-                onSelect = { selectedId = it }
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Type:")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = !typeReturn, onClick = { typeReturn = false }); Text("Single")
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = typeReturn, onClick = { typeReturn = true }); Text("Return")
-            }
-        }
+    AppScaffold(
+        title = "Train Ticket Machine",
+        topActions = { AdminAction(onClick = onAdmin) }
+    ) { pads ->
+        Column(
+            Modifier.fillMaxSize().padding(pads).padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                SectionCard(Modifier.weight(1f)) {
+                    Text("Choose Destination", style = MaterialTheme.typography.h5)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Destination:")
+                        DropdownMenuBox(
+                            items = stations.map { it.id to it.name },
+                            selected = selectedId,
+                            onSelect = { selectedId = it }
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        Text("Ticket Type:")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = !typeReturn, onClick = { typeReturn = false }); Spacer(Modifier.width(6.dp)); Text("Single")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = typeReturn, onClick = { typeReturn = true }); Spacer(Modifier.width(6.dp)); Text("Return")
+                        }
+                    }
+                }
 
-        Divider()
-        if (quote != null) {
-            Text("Prices:")
-            Text("Single: ${Money.f(quote.baseSingle)}  →  ${Money.f(quote.singleAfterOffer)}")
-            Text("Return: ${Money.f(quote.baseReturn)}  →  ${Money.f(quote.returnAfterOffer)}")
-            if (quote.activeOffer != null) {
-                Text("Offer active: -${quote.activeOffer.discountPercent}% (${quote.activeOffer.startDate} to ${quote.activeOffer.endDate})",
-                    color = MaterialTheme.colors.primary)
+                SectionCard(Modifier.weight(1f)) {
+                    Text("Price", style = MaterialTheme.typography.h5)
+                    if (quote == null) {
+                        Text("Select a destination to see prices.")
+                    } else {
+                        Text("Single:  ${Money.f(quote.baseSingle)}  →  ${Money.f(quote.singleAfterOffer)}")
+                        Text("Return:  ${Money.f(quote.baseReturn)}  →  ${Money.f(quote.returnAfterOffer)}")
+                        if (quote.activeOffer != null) {
+                            Text(
+                                "Active offer: -${quote.activeOffer.discountPercent}%  (${quote.activeOffer.startDate} to ${quote.activeOffer.endDate})",
+                                color = MaterialTheme.colors.secondary
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    PrimaryButton(
+                        text = "Buy with Card",
+                        onClick = { if (selectedId != null) onBuy(selectedId!!, typeReturn) },
+                        enabled = selectedId != null
+                    )
+                }
             }
-        }
-
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(enabled = selectedId != null, onClick = {
-                onBuy(selectedId!!, typeReturn)
-            }) { Text("Buy with Card") }
-
-            OutlinedButton(onClick = onAdmin) { Text("Admin Login") }
         }
     }
 }
@@ -87,48 +100,79 @@ fun PaymentScreen(
     var cardNumber by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Enter Test Card Number (e.g., 4242 4242 4242 4242)")
-        OutlinedTextField(value = cardNumber, onValueChange = { cardNumber = it.filter { ch -> ch.isDigit() } },
-            placeholder = { Text("4242424242424242") }, singleLine = true)
+    AppScaffold(title = "Payment", showBack = true, onBack = onBack) { pads ->
+        Column(
+            Modifier.fillMaxSize().padding(pads).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SectionCard {
+                Text("Confirm Purchase", style = MaterialTheme.typography.h5)
+                Text("Destination: ${station.name}")
+                Text("Type: ${if (typeIsReturn) "Return" else "Single"}")
+                Text("Amount: ${Money.f(price)}")
+            }
 
-        Text("Amount: ${Money.f(price)}")
-        if (error != null) Text(error!!, color = MaterialTheme.colors.error)
+            SectionCard {
+                Text("Insert Card (Test Number)", style = MaterialTheme.typography.h5)
+                OutlinedTextField(
+                    value = cardNumber,
+                    onValueChange = { cardNumber = it.filter(Char::isDigit) },
+                    placeholder = { Text("4242424242424242") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error != null) Text(error!!, color = MaterialTheme.colors.error)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PrimaryButton("Pay") {
+                        val card = cardRepo.find(cardNumber)
+                        if (card == null) { error = "Card not found (use a valid test number)."; return@PrimaryButton }
+                        if (!cardRepo.deduct(cardNumber, price)) { error = "Insufficient funds."; return@PrimaryButton }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onBack) { Text("Back") }
-            Button(onClick = {
-                val card = cardRepo.find(cardNumber)
-                if (card == null) { error = "Card not found (use a valid test number)."; return@Button }
-                if (!cardRepo.deduct(cardNumber, price)) { error = "Insufficient funds."; return@Button }
+                        stationRepo.incSales(stationId)
+                        ticketRepo.log(
+                            origin = "ORIGIN STATION",
+                            destination = station.name,
+                            type = if (typeIsReturn) TicketType.RETURN else TicketType.SINGLE,
+                            price = price,
+                            cardNumber = cardNumber
+                        )
 
-                stationRepo.incSales(stationId)
-                ticketRepo.log(origin = "ORIGIN STATION", destination = station.name,
-                    type = if (typeIsReturn) TicketType.RETURN else TicketType.SINGLE, price = price, cardNumber = cardNumber)
-
-                val ticketText = buildString {
-                    appendLine("ORIGIN STATION")
-                    appendLine("to")
-                    appendLine(station.name.uppercase())
-                    appendLine("Price: ${"%.2f".format(price)} [${if (typeIsReturn) "Return" else "Single"}]")
+                        val ticketText = buildString {
+                            appendLine("ORIGIN STATION")
+                            appendLine("to")
+                            appendLine(station.name.uppercase())
+                            appendLine("Price: ${"%.2f".format(price)} [${if (typeIsReturn) "Return" else "Single"}]")
+                        }
+                        onPaid(ticketText)
+                    }
                 }
-                onPaid(ticketText)
-            }) { Text("Pay") }
+            }
         }
     }
 }
 
 @Composable
 fun TicketScreen(ticketText: String, onDone: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Ticket issued:")
-        Surface(elevation = 2.dp) { Box(Modifier.padding(16.dp)) { Text(ticketText) } }
-        Button(onClick = {
-            java.nio.file.Files.writeString(java.nio.file.Paths.get("ticket.txt"),
-                "***\n" + ticketText.lines().joinToString("\n") + "\n***\n")
-        }) { Text("Print (save ticket.txt)") }
-        OutlinedButton(onClick = onDone) { Text("Done") }
+    AppScaffold(title = "Ticket Issued") { pads ->
+        Column(
+            Modifier.fillMaxSize().padding(pads).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SectionCard {
+                Text("Your Ticket", style = MaterialTheme.typography.h5)
+                Surface(elevation = 1.dp) {
+                    Box(Modifier.fillMaxWidth().padding(16.dp)) { Text(ticketText) }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PrimaryButton("Print (save ticket.txt)") {
+                        java.nio.file.Files.writeString(
+                            java.nio.file.Paths.get("ticket.txt"),
+                            "***\n" + ticketText.lines().joinToString("\n") + "\n***\n"
+                        )
+                    }
+                    OutlinedButton(onClick = onDone) { Text("Done") }
+                }
+            }
+        }
     }
 }
