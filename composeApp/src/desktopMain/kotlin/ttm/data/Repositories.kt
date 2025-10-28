@@ -120,6 +120,26 @@ class OfferRepository(private val conn: Connection) {
                 }
             } }
 
+    fun forStation(stationId: Long): List<Offer> =
+        conn.prepareStatement(
+            "SELECT id, station_id, discount_percent, start_date, end_date FROM offers WHERE station_id=? ORDER BY start_date DESC, id DESC;"
+        ).use { ps ->
+            ps.setLong(1, stationId)
+            ps.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) add(
+                        Offer(
+                            rs.getLong(1),
+                            rs.getLong(2),
+                            rs.getDouble(3),
+                            Dates.parse(rs.getString(4)),
+                            Dates.parse(rs.getString(5))
+                        )
+                    )
+                }
+            }
+        }
+
     fun add(stationId: Long, percent: Double, start: LocalDate, end: LocalDate) {
         conn.prepareStatement("INSERT INTO offers(station_id,discount_percent,start_date,end_date) VALUES(?,?,?,?);")
             .use { ps ->
