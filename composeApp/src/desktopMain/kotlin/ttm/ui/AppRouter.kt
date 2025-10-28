@@ -46,29 +46,18 @@ fun AppRouter(
         )
 
         is Screen.AdminDashboard -> AdminDashboardScreen(
-            stationRepo = stationRepo, // <- required for the grid
+            stationRepo = stationRepo,
+            offerRepo = offerRepo,
             onBack = { nav.go(Screen.UserSearch) },
-            onStationDetail = { id -> nav.go(Screen.AdminStationDetail(id)) },
-            onAdjustPrices = { nav.go(Screen.AdminPriceAdjust) },
+            onEditStation = { id -> nav.go(Screen.AdminStationEdit(id)) },
             onAddStation = { nav.go(Screen.AdminStationEdit(null)) },
             onOffers = { nav.go(Screen.AdminOffers) }
-        )
-
-        is Screen.AdminStationDetail -> AdminStationDetailScreen(
-            stationId = s.stationId,
-            stationRepo = stationRepo,
-            onBack = { nav.go(Screen.AdminDashboard) },
-            onEdit = { nav.go(Screen.AdminStationEdit(s.stationId)) }
-        )
-
-        is Screen.AdminPriceAdjust -> AdminPriceAdjustScreen(
-            stationRepo = stationRepo,
-            onDone = { nav.go(Screen.AdminDashboard) }
         )
 
         is Screen.AdminStationEdit -> AdminStationEditScreen(
             stationId = s.stationId,
             stationRepo = stationRepo,
+            offerRepo = offerRepo,
             onDone = { nav.go(Screen.AdminDashboard) }
         )
 
