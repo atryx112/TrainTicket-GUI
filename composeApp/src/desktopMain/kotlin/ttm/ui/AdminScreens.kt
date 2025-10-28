@@ -1,6 +1,9 @@
 package ttm.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -69,16 +72,14 @@ fun AdminDashboardScreen(
         showBack = true,
         onBack = onBack,
         topActions = {
-            TextButton(onClick = onAdjustPrices) { Text("Adjust Prices") }
-            Spacer(Modifier.width(8.dp))
-            TextButton(onClick = onOffers) { Text("Offers") }
-            Spacer(Modifier.width(8.dp))
-            TextButton(onClick = onAddStation) { Text("Add Station") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOffers) { Text("Offers") }
+                TextButton(onClick = onAddStation) { Text("Add Station") }
+            }
         }
     ) { pads ->
         Column(
-            Modifier.fillMaxSize().padding(pads).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            Modifier.fillMaxSize().padding(pads).padding(24.dp)
         ) {
             SectionCard {
                 Row(
@@ -93,38 +94,36 @@ fun AdminDashboardScreen(
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
-                    PrimaryButton(text = "Adjust Prices") { onAdjustPrices() }
                     OutlinedButton(onClick = onOffers) { Text("Offers") }
                     OutlinedButton(onClick = onAddStation) { Text("Add Station") }
                 }
             }
 
-            val cols = 3
-            val rows = stations.chunked(cols)
+            Spacer(Modifier.height(16.dp))
+
             if (stations.isEmpty()) {
                 SectionCard { Text("No stations match “$query”.") }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    rows.forEach { row ->
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            row.forEach { st ->
-                                SectionCard(Modifier.weight(1f)) {
-                                    Text(st.name, style = MaterialTheme.typography.h5)
-                                    Spacer(Modifier.height(6.dp))
-                                    Text("Single: ${"%.2f".format(st.singlePrice)}")
-                                    Text("Return: ${"%.2f".format(st.returnPrice)}")
-                                    Spacer(Modifier.height(6.dp))
-                                    Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
-                                    Spacer(Modifier.height(10.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        PrimaryButton(text = "Open Details") { onStationDetail(st.id) }
-                                    }
+                Box(Modifier.weight(1f, fill = true)) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 260.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(stations, key = { it.id }) { st ->
+                            SectionCard {
+                                Text(st.name, style = MaterialTheme.typography.h5)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Single: ${"%.2f".format(st.singlePrice)}")
+                                Text("Return: ${"%.2f".format(st.returnPrice)}")
+                                Spacer(Modifier.height(6.dp))
+                                Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    PrimaryButton(text = "Edit") { onStationDetail(st.id) }
                                 }
                             }
-                            if (row.size < cols) repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
@@ -200,6 +199,7 @@ fun AdminPriceAdjustScreen(
 fun AdminStationEditScreen(
     stationId: Long?,
     stationRepo: StationRepository,
+    offerRepo: OfferRepository,
     onDone: () -> Unit
 ) {
     val existing = remember(stationId) { stationId?.let { stationRepo.byId(it) } }
@@ -207,6 +207,9 @@ fun AdminStationEditScreen(
     var single by remember { mutableStateOf(existing?.singlePrice?.toString() ?: "") }
     var ret by remember { mutableStateOf(existing?.returnPrice?.toString() ?: "") }
     var msg by remember { mutableStateOf<String?>(null) }
+    val offersForStation = remember(stationId) {
+        stationId?.let { id -> offerRepo.list().filter { it.stationId == id } } ?: emptyList()
+    }
 
     AppScaffold(title = if (stationId == null) "Add Station" else "Edit Station",
         showBack = true, onBack = onDone) { pads ->
@@ -234,6 +237,22 @@ fun AdminStationEditScreen(
                         stationRepo.upsert(upd)
                         msg = "Saved."
                     }
+                }
+            }
+
+            if (stationId != null) {
+                SectionCard {
+                    Text("Offers for this station", style = MaterialTheme.typography.h6)
+                    Spacer(Modifier.height(8.dp))
+                    if (offersForStation.isEmpty()) {
+                        Text("There are no active offers for this station.")
+                    } else {
+                        offersForStation.forEach { offer ->
+                            Text("• -${offer.discountPercent}%  ${offer.startDate} → ${offer.endDate}")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Manage offers from the Offers screen.", style = MaterialTheme.typography.body2)
                 }
             }
         }

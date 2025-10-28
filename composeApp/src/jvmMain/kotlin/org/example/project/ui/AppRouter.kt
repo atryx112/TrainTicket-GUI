@@ -52,7 +52,7 @@ fun AppRouter(
             stationRepo = stationRepo, onDone = { nav.go(Screen.AdminDashboard) }
         )
         is Screen.AdminStationEdit -> AdminStationEditScreen(
-            stationId = s.stationId, stationRepo = stationRepo, onDone = { nav.go(Screen.AdminDashboard) }
+            stationId = s.stationId, stationRepo = stationRepo, offerRepo = offerRepo, onDone = { nav.go(Screen.AdminDashboard) }
         )
         is Screen.AdminOffers -> AdminOffersScreen(
             offerRepo = offerRepo, stationRepo = stationRepo, onBack = { nav.go(Screen.AdminDashboard) }

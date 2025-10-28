@@ -116,6 +116,7 @@ fun AdminPriceAdjustScreen(
 fun AdminStationEditScreen(
     stationId: Long?,
     stationRepo: StationRepository,
+    offerRepo: OfferRepository,
     onDone: () -> Unit
 ) {
     val existing = remember(stationId) { stationId?.let { stationRepo.byId(it) } }
@@ -123,6 +124,9 @@ fun AdminStationEditScreen(
     var single by remember { mutableStateOf(existing?.singlePrice?.toString() ?: "") }
     var ret by remember { mutableStateOf(existing?.returnPrice?.toString() ?: "") }
     var msg by remember { mutableStateOf<String?>(null) }
+    val offersForStation = remember(stationId) {
+        stationId?.let { id -> offerRepo.list().filter { it.stationId == id } } ?: emptyList()
+    }
 
     Column(Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -141,6 +145,18 @@ fun AdminStationEditScreen(
                 stationRepo.upsert(upd)
                 msg = "Saved."
             }) { Text("Save") }
+        }
+        if (stationId != null) {
+            Divider()
+            Text("Offers for this station:", style = MaterialTheme.typography.subtitle1)
+            if (offersForStation.isEmpty()) {
+                Text("No active offers.")
+            } else {
+                offersForStation.forEach { offer ->
+                    Text("• -${offer.discountPercent}%  ${offer.startDate} → ${offer.endDate}")
+                }
+            }
+            Text("Manage offers from the Offers screen.", style = MaterialTheme.typography.caption)
         }
     }
 }
