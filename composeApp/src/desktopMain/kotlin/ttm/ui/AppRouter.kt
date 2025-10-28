@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import ttm.app.Nav
 import ttm.app.Screen
 import ttm.data.*
-import ttm.domain.*
 
 @Composable
 fun AppRouter(
@@ -20,8 +19,10 @@ fun AppRouter(
             stationRepo = stationRepo,
             offerRepo = offerRepo,
             onBuy = { stationId, typeIsReturn -> nav.go(Screen.Payment(stationId, typeIsReturn)) },
-            onAdmin = { nav.go(Screen.AdminLogin) }
+            onAdmin = { nav.go(Screen.AdminLogin) },
+            onOpenStations = { nav.go(Screen.StationsBrowser) }
         )
+
         is Screen.Payment -> PaymentScreen(
             stationId = s.destinationId,
             typeIsReturn = s.typeIsReturn,
@@ -32,31 +33,56 @@ fun AppRouter(
             onPaid = { ticketText -> nav.go(Screen.Ticket(ticketText)) },
             onBack = { nav.go(Screen.UserSearch) }
         )
-        is Screen.Ticket -> TicketScreen(ticketText = s.ticketText) { nav.go(Screen.UserSearch) }
+
+        is Screen.Ticket -> TicketScreen(
+            ticketText = s.ticketText,
+            onDone = { nav.go(Screen.UserSearch) }
+        )
+
         is Screen.AdminLogin -> AdminLoginScreen(
             adminRepo = adminRepo,
             onSuccess = { nav.go(Screen.AdminDashboard) },
             onCancel = { nav.go(Screen.UserSearch) }
         )
+
         is Screen.AdminDashboard -> AdminDashboardScreen(
+            stationRepo = stationRepo, // <- required for the grid
             onBack = { nav.go(Screen.UserSearch) },
             onStationDetail = { id -> nav.go(Screen.AdminStationDetail(id)) },
             onAdjustPrices = { nav.go(Screen.AdminPriceAdjust) },
             onAddStation = { nav.go(Screen.AdminStationEdit(null)) },
             onOffers = { nav.go(Screen.AdminOffers) }
         )
+
         is Screen.AdminStationDetail -> AdminStationDetailScreen(
-            stationId = s.stationId, stationRepo = stationRepo, onBack = { nav.go(Screen.AdminDashboard) },
+            stationId = s.stationId,
+            stationRepo = stationRepo,
+            onBack = { nav.go(Screen.AdminDashboard) },
             onEdit = { nav.go(Screen.AdminStationEdit(s.stationId)) }
         )
+
         is Screen.AdminPriceAdjust -> AdminPriceAdjustScreen(
-            stationRepo = stationRepo, onDone = { nav.go(Screen.AdminDashboard) }
+            stationRepo = stationRepo,
+            onDone = { nav.go(Screen.AdminDashboard) }
         )
+
         is Screen.AdminStationEdit -> AdminStationEditScreen(
-            stationId = s.stationId, stationRepo = stationRepo, onDone = { nav.go(Screen.AdminDashboard) }
+            stationId = s.stationId,
+            stationRepo = stationRepo,
+            onDone = { nav.go(Screen.AdminDashboard) }
         )
+
         is Screen.AdminOffers -> AdminOffersScreen(
-            offerRepo = offerRepo, stationRepo = stationRepo, onBack = { nav.go(Screen.AdminDashboard) }
+            offerRepo = offerRepo,
+            stationRepo = stationRepo,
+            onBack = { nav.go(Screen.AdminDashboard) }
+        )
+
+        is Screen.StationsBrowser -> StationsBrowserScreen(
+            stationRepo = stationRepo,
+            offerRepo = offerRepo,
+            onBack = { nav.go(Screen.UserSearch) },
+            onBuy = { id, isReturn -> nav.go(Screen.Payment(id, isReturn)) }
         )
     }
 }

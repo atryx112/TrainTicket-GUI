@@ -12,6 +12,9 @@ sealed interface Screen {
     data object AdminPriceAdjust : Screen
     data class AdminStationEdit(val stationId: Long?) : Screen
     data object AdminOffers : Screen
+
+    // NEW: modern stations browser
+    data object StationsBrowser : Screen
 }
 
 class Nav {

@@ -17,7 +17,8 @@ fun UserSearchScreen(
     stationRepo: StationRepository,
     offerRepo: OfferRepository,
     onBuy: (stationId: Long, typeIsReturn: Boolean) -> Unit,
-    onAdmin: () -> Unit
+    onAdmin: () -> Unit,
+    onOpenStations: () -> Unit, // NEW
 ) {
     val stations by remember { mutableStateOf(stationRepo.all()) }
     var selectedId by remember { mutableStateOf<Long?>(stations.firstOrNull()?.id) }
@@ -28,7 +29,11 @@ fun UserSearchScreen(
 
     AppScaffold(
         title = "Train Ticket Machine",
-        topActions = { AdminAction(onClick = onAdmin) }
+        topActions = {
+            TextButton(onClick = onOpenStations) { Text("Stations") }
+            Spacer(Modifier.width(8.dp))
+            AdminAction(onClick = onAdmin)
+        }
     ) { pads ->
         Column(
             Modifier.fillMaxSize().padding(pads).padding(24.dp)
@@ -66,17 +71,17 @@ fun UserSearchScreen(
                         Text("Return:  ${Money.f(quote.baseReturn)}  →  ${Money.f(quote.returnAfterOffer)}")
                         if (quote.activeOffer != null) {
                             Text(
-                                "Active offer: -${quote.activeOffer.discountPercent}%  (${quote.activeOffer.startDate} to ${quote.activeOffer.endDate})",
-                                color = MaterialTheme.colors.secondary
+                                "Active offer: -${quote.activeOffer!!.discountPercent}%  (${quote.activeOffer!!.startDate} to ${quote.activeOffer!!.endDate})",
+                                color = MaterialTheme.colors.secondary,
+                                style = MaterialTheme.typography.subtitle1
                             )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
                     PrimaryButton(
                         text = "Buy with Card",
-                        onClick = { if (selectedId != null) onBuy(selectedId!!, typeReturn) },
                         enabled = selectedId != null
-                    )
+                    ) { if (selectedId != null) onBuy(selectedId!!, typeReturn) }
                 }
             }
         }
@@ -123,7 +128,7 @@ fun PaymentScreen(
                 )
                 if (error != null) Text(error!!, color = MaterialTheme.colors.error)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PrimaryButton("Pay") {
+                    PrimaryButton(text = "Pay") {
                         val card = cardRepo.find(cardNumber)
                         if (card == null) { error = "Card not found (use a valid test number)."; return@PrimaryButton }
                         if (!cardRepo.deduct(cardNumber, price)) { error = "Insufficient funds."; return@PrimaryButton }
@@ -164,13 +169,81 @@ fun TicketScreen(ticketText: String, onDone: () -> Unit) {
                     Box(Modifier.fillMaxWidth().padding(16.dp)) { Text(ticketText) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PrimaryButton("Print (save ticket.txt)") {
+                    PrimaryButton(text = "Print (save ticket.txt)") {
                         java.nio.file.Files.writeString(
                             java.nio.file.Paths.get("ticket.txt"),
                             "***\n" + ticketText.lines().joinToString("\n") + "\n***\n"
                         )
                     }
                     OutlinedButton(onClick = onDone) { Text("Done") }
+                }
+            }
+        }
+    }
+}
+
+/* ---------- NEW modern stations browser ----------- */
+
+@Composable
+fun StationsBrowserScreen(
+    stationRepo: StationRepository,
+    offerRepo: OfferRepository,
+    onBack: () -> Unit,
+    onBuy: (stationId: Long, typeIsReturn: Boolean) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val allStations = remember { stationRepo.all() }
+    val stations = remember(query, allStations) {
+        if (query.isBlank()) allStations
+        else allStations.filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    AppScaffold(title = "Stations", showBack = true, onBack = onBack) { pads ->
+        Column(
+            Modifier.fillMaxSize().padding(pads).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            SectionCard {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search station") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            val cols = 3
+            val rows = stations.chunked(cols)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                rows.forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        row.forEach { st ->
+                            val quote = remember(st.id) { offerRepo.quote(st) }
+                            SectionCard(Modifier.weight(1f)) {
+                                Text(st.name, style = MaterialTheme.typography.h5)
+                                Spacer(Modifier.height(6.dp))
+                                if (quote.activeOffer != null) {
+                                    Text(
+                                        "-${quote.activeOffer!!.discountPercent}% offer active",
+                                        color = MaterialTheme.colors.secondary,
+                                        style = MaterialTheme.typography.subtitle1
+                                    )
+                                }
+                                Text("Single: ${Money.f(quote.singleAfterOffer)}")
+                                Text("Return: ${Money.f(quote.returnAfterOffer)}")
+                                Spacer(Modifier.height(6.dp))
+                                Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
+
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    PrimaryButton(text = "Buy Single") { onBuy(st.id, false) }
+                                    OutlinedButton(onClick = { onBuy(st.id, true) }) { Text("Buy Return") }
+                                }
+                            }
+                        }
+                        if (row.size < cols) repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
                 }
             }
         }

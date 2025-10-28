@@ -3,10 +3,9 @@ package ttm.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -22,8 +21,14 @@ fun AppScaffold(
         topBar = {
             TopAppBar(
                 title = { Text(title) },
+                backgroundColor = MaterialTheme.colors.primary,
+                contentColor = MaterialTheme.colors.onPrimary, // ensure icons/text are visible
                 navigationIcon = if (showBack && onBack != null) {
-                    { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } }
+                    {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
                 } else null,
                 actions = topActions,
                 elevation = 2.dp
@@ -35,19 +40,30 @@ fun AppScaffold(
 }
 
 @Composable
-fun SectionCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SectionCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Surface(
         modifier = modifier,
         elevation = 4.dp,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colors.surface
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             content()
         }
     }
 }
 
+/**
+ * Ordered so trailing lambda binds to onClick cleanly.
+ * Example:
+ *   PrimaryButton(text = "Pay") { /* click */ }
+ */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -58,8 +74,14 @@ fun PrimaryButton(
 }
 
 @Composable
-fun DangerButton(text: String, onClick: () -> Unit) {
-    Button(onClick = onClick, colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)) {
+fun DangerButton(
+    text: String,
+    onClick: () -> Unit = {}
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+    ) {
         Text(text, color = MaterialTheme.colors.onPrimary)
     }
 }
@@ -76,14 +98,24 @@ fun DropdownMenuBox(
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         items.forEach { (id, name) ->
-            DropdownMenuItem(onClick = { onSelect(id); expanded = false }) { Text(name) }
+            DropdownMenuItem(onClick = { onSelect(id); expanded = false }) {
+                Text(name)
+            }
         }
     }
 }
 
+/** Admin button with shield icon + visible "Admin Panel" text on the TopAppBar. */
 @Composable
 fun AdminAction(onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+    TextButton(
+        onClick = onClick,
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = MaterialTheme.colors.onPrimary // visible on app bar
+        )
+    ) {
         Icon(Icons.Default.AdminPanelSettings, contentDescription = "Admin")
+        Spacer(Modifier.width(6.dp))
+        Text("Admin Panel")
     }
 }
