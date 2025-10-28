@@ -1,6 +1,9 @@
 package ttm.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -69,16 +72,11 @@ fun AdminDashboardScreen(
         showBack = true,
         onBack = onBack,
         topActions = {
-            TextButton(onClick = onAdjustPrices) { Text("Adjust Prices") }
-            Spacer(Modifier.width(8.dp))
-            TextButton(onClick = onOffers) { Text("Offers") }
-            Spacer(Modifier.width(8.dp))
             TextButton(onClick = onAddStation) { Text("Add Station") }
         }
     ) { pads ->
         Column(
-            Modifier.fillMaxSize().padding(pads).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            Modifier.fillMaxSize().padding(pads).padding(24.dp)
         ) {
             SectionCard {
                 Row(
@@ -93,38 +91,35 @@ fun AdminDashboardScreen(
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
-                    PrimaryButton(text = "Adjust Prices") { onAdjustPrices() }
-                    OutlinedButton(onClick = onOffers) { Text("Offers") }
                     OutlinedButton(onClick = onAddStation) { Text("Add Station") }
                 }
             }
 
-            val cols = 3
-            val rows = stations.chunked(cols)
+            Spacer(Modifier.height(16.dp))
+
             if (stations.isEmpty()) {
                 SectionCard { Text("No stations match “$query”.") }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    rows.forEach { row ->
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            row.forEach { st ->
-                                SectionCard(Modifier.weight(1f)) {
-                                    Text(st.name, style = MaterialTheme.typography.h5)
-                                    Spacer(Modifier.height(6.dp))
-                                    Text("Single: ${"%.2f".format(st.singlePrice)}")
-                                    Text("Return: ${"%.2f".format(st.returnPrice)}")
-                                    Spacer(Modifier.height(6.dp))
-                                    Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
-                                    Spacer(Modifier.height(10.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        PrimaryButton(text = "Open Details") { onStationDetail(st.id) }
-                                    }
+                Box(Modifier.weight(1f, fill = true)) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 260.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(stations, key = { it.id }) { st ->
+                            SectionCard {
+                                Text(st.name, style = MaterialTheme.typography.h5)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Single: ${"%.2f".format(st.singlePrice)}")
+                                Text("Return: ${"%.2f".format(st.returnPrice)}")
+                                Spacer(Modifier.height(6.dp))
+                                Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    PrimaryButton(text = "Edit") { onStationDetail(st.id) }
                                 }
                             }
-                            if (row.size < cols) repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
