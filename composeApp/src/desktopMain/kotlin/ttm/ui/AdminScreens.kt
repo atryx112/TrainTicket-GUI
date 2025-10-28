@@ -86,6 +86,7 @@ fun AdminDashboardScreen(
         showBack = true,
         onBack = onBack,
         topActions = {
+codex/remove-adjust-offers-button-and-rename-y8fgaw
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onAdjustPrices) { Text("Adjust Prices") }
                 TextButton(onClick = onOffers) { Text("Offers") }
@@ -138,6 +139,56 @@ fun AdminDashboardScreen(
                                 offers = offers,
                                 onEdit = { onStationDetail(station.id) }
                             )
+
+            TextButton(onClick = onAddStation) { Text("Add Station") }
+        }
+    ) { pads ->
+        Column(
+            Modifier.fillMaxSize().padding(pads).padding(24.dp)
+        ) {
+            SectionCard {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        label = { Text("Search stations") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedButton(onClick = onAddStation) { Text("Add Station") }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            if (stations.isEmpty()) {
+                SectionCard { Text("No stations match “$query”.") }
+            } else {
+                Box(Modifier.weight(1f, fill = true)) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 260.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(stations, key = { it.id }) { st ->
+                            SectionCard {
+                                Text(st.name, style = MaterialTheme.typography.h5)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Single: ${"%.2f".format(st.singlePrice)}")
+                                Text("Return: ${"%.2f".format(st.returnPrice)}")
+                                Spacer(Modifier.height(6.dp))
+                                Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    PrimaryButton(text = "Edit") { onStationDetail(st.id) }
+                                }
+                            }
+ master
                         }
                     }
                 }
