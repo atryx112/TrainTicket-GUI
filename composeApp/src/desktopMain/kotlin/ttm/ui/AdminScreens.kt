@@ -77,7 +77,11 @@ fun AdminDashboardScreen(
         }
     ) { pads ->
         Column(
-            Modifier.fillMaxSize().padding(pads).padding(24.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(pads)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),   // ← add this line
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SectionCard {
