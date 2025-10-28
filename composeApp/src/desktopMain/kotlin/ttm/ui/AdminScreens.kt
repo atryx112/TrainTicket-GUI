@@ -46,13 +46,13 @@ fun AdminLoginScreen(
     }
 }
 
-/* -------------------- Admin Dashboard (fixed + modern) -------------------- */
+/* -------------------- Admin Dashboard (scrollable, cards have only “Edit”) -------------------- */
 
 @Composable
 fun AdminDashboardScreen(
     stationRepo: StationRepository,
     onBack: () -> Unit,
-    onStationDetail: (Long) -> Unit,
+    onEditStation: (Long) -> Unit,   // <— renamed
     onAdjustPrices: () -> Unit,
     onAddStation: () -> Unit,
     onOffers: () -> Unit
@@ -81,7 +81,7 @@ fun AdminDashboardScreen(
                 .fillMaxSize()
                 .padding(pads)
                 .padding(24.dp)
-                .verticalScroll(rememberScrollState()),   // ← add this line
+                .verticalScroll(rememberScrollState()),   // <— scrollable
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SectionCard {
@@ -123,8 +123,9 @@ fun AdminDashboardScreen(
                                     Spacer(Modifier.height(6.dp))
                                     Text("Sales: ${st.salesCount}", style = MaterialTheme.typography.subtitle1)
                                     Spacer(Modifier.height(10.dp))
+                                    // Only Edit button on each station card
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        PrimaryButton(text = "Open Details") { onStationDetail(st.id) }
+                                        PrimaryButton(text = "Edit") { onEditStation(st.id) }
                                     }
                                 }
                             }
@@ -137,7 +138,7 @@ fun AdminDashboardScreen(
     }
 }
 
-/* -------------------- Station Detail -------------------- */
+/* -------------------- Station Detail (unchanged) -------------------- */
 
 @Composable
 fun AdminStationDetailScreen(
@@ -182,7 +183,7 @@ fun AdminPriceAdjustScreen(
         Column(Modifier.fillMaxSize().padding(pads).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionCard {
-                OutlinedTextField(factor, { factor = it }, label = { Text("Factor (e.g., 0.9 for -10%)") }, singleLine = true)
+                OutlinedTextField(factor, { factor = it }, label = { Text("Factor (e.g. 0.9 for -10%)") }, singleLine = true)
                 if (info != null) Text(info!!)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(onClick = onDone) { Text("Back") }

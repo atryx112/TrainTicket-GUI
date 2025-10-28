@@ -46,14 +46,15 @@ fun AppRouter(
         )
 
         is Screen.AdminDashboard -> AdminDashboardScreen(
-            stationRepo = stationRepo, // <- required for the grid
+            stationRepo = stationRepo,
             onBack = { nav.go(Screen.UserSearch) },
-            onStationDetail = { id -> nav.go(Screen.AdminStationDetail(id)) },
+            onEditStation = { id -> nav.go(Screen.AdminStationEdit(id)) }, // <— direct to Edit
             onAdjustPrices = { nav.go(Screen.AdminPriceAdjust) },
             onAddStation = { nav.go(Screen.AdminStationEdit(null)) },
             onOffers = { nav.go(Screen.AdminOffers) }
         )
 
+        // Detail screen still exists if you ever want to use it
         is Screen.AdminStationDetail -> AdminStationDetailScreen(
             stationId = s.stationId,
             stationRepo = stationRepo,
